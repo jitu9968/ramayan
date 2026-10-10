@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Production build outputs
+dist/
+build/
+*.apk
+*.aab
+
+# Native build artifacts
+android/app/build/
+android/.gradle/
+android/local.properties
+android/captures/
+ios/App/App/public/
+ios/App/Pods/
+ios/App/DerivedData/
+
+# Logs & temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

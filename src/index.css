@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-color: #FDFBF7;
+    --card-color: #FFFFFF;
+    --text-color: #2D3748;
+    --muted-color: #718096;
+    --border-color: #E2E8F0;
+    --accent-color: #C05621;
+  }
+
+  html.theme-light {
+    --bg-color: #FDFBF7;
+    --card-color: #FFFFFF;
+    --text-color: #2D3748;
+    --muted-color: #718096;
+    --border-color: #E2E8F0;
+    --accent-color: #C05621;
+  }
+
+  html.theme-sepia {
+    --bg-color: #F4ECD8;
+    --card-color: #E9DFC7;
+    --text-color: #4A3728;
+    --muted-color: #7A6451;
+    --border-color: #D8C9B0;
+    --accent-color: #8C4303;
+  }
+
+  html.theme-dark {
+    --bg-color: #1A202C;
+    --card-color: #2D3748;
+    --text-color: #E2E8F0;
+    --muted-color: #A0AEC0;
+    --border-color: #4A5568;
+    --accent-color: #ED8936;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+  }
+}
+
+.theme-bg {
+  background-color: var(--bg-color);
+}
+
+.theme-card {
+  background-color: var(--card-color);
+}
+
+.theme-text {
+  color: var(--text-color);
+}
+
+.theme-muted {
+  color: var(--muted-color);
+}
+
+.theme-border {
+  border-color: var(--border-color);
+}
+
+/* Safe area insets for iOS notch & home bar */
+.pt-safe {
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.pb-safe-or-6 {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+/* Devanagari Verse & WordPress HTML Styling */
+.ramayan-reader-content p {
+  margin-bottom: 1.25rem;
+  line-height: inherit;
+}
+
+.ramayan-reader-content blockquote {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem;
+  border-left: 4px solid var(--accent-color);
+  background-color: rgba(217, 119, 6, 0.08);
+  border-radius: 0.75rem;
+  font-family: 'Rozha One', 'Noto Sans Devanagari', serif;
+}
+
+.ramayan-reader-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 1rem;
+  margin: 1.5rem auto;
+}
+
+.ramayan-reader-content strong,
+.ramayan-reader-content b {
+  color: var(--accent-color);
+  font-weight: 700;
+}
+
+.ramayan-reader-content h1,
+.ramayan-reader-content h2,
+.ramayan-reader-content h3,
+.ramayan-reader-content h4 {
+  font-family: 'Rozha One', 'Noto Sans Devanagari', serif;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+  color: var(--text-color);
+}
+
+.ramayan-reader-content hr {
+  border: 0;
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 2rem 0;
+}
