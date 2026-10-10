@@ -30,6 +30,7 @@ import { StorageBookmarksModal } from './components/Manager/StorageBookmarksModa
 import { SplashScreen } from './components/Common/SplashScreen';
 import { ChapterListSkeleton, ReaderSkeleton } from './components/Common/SkeletonLoader';
 import { searchChapters } from './utils/search';
+import { getRamayanKandMetas } from './data/ramayanChapters';
 import { AlertTriangle, RefreshCw, FileText, ChevronRight, Search as SearchIcon } from 'lucide-react';
 
 export default function App() {
@@ -100,25 +101,30 @@ export default function App() {
     setIsLoadingIndex(true);
     setIndexError(null);
 
-    // 1. Fetch fresh index from https://www.jituonline.in/ramayan/wp-json/wp/v2/posts
     try {
       const freshIndex = await fetchChapterIndex();
-      setChapters(freshIndex);
-      await saveChapterIndexCache(freshIndex);
-
-      const ids = await getCachedChapterIds();
-      setCachedIds(ids);
-      const lr = await getLastRead();
-      setLastReadState(lr);
+      if (freshIndex && freshIndex.length > 0) {
+        setChapters(freshIndex);
+        await saveChapterIndexCache(freshIndex);
+      } else {
+        const localMetas = getRamayanKandMetas();
+        setChapters(localMetas);
+        await saveChapterIndexCache(localMetas);
+      }
     } catch (err: any) {
-      console.warn('Network fetch failed for index, relying on local cache', err);
+      console.warn('Network fetch failed for index, relying on local dataset', err);
       const cachedIndex = await getChapterIndexCache();
       if (cachedIndex && cachedIndex.length > 0) {
         setChapters(cachedIndex);
       } else {
-        setIndexError('Unable to connect to Ramayan WordPress API. Please check your network connection.');
+        const localMetas = getRamayanKandMetas();
+        setChapters(localMetas);
       }
     } finally {
+      const ids = await getCachedChapterIds();
+      setCachedIds(ids);
+      const lr = await getLastRead();
+      setLastReadState(lr);
       setIsLoadingIndex(false);
     }
   };

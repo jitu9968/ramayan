@@ -1,22 +1,11 @@
 import { WPPostMeta, WPPostDetail } from '../types/ramayan';
+import { RAMAYAN_KANDS, getRamayanKandAsWPDetail, getRamayanKandMetas } from '../data/ramayanChapters';
 
 const BASE_URL = 'https://www.jituonline.in/ramayan/wp-json/wp/v2/posts';
 const PAGES_URL = 'https://www.jituonline.in/ramayan/wp-json/wp/v2/pages';
 
 /**
- * Sorts WordPress posts strictly into the requested canonical order (1 to 12):
- * 1. बालकाण्ड (balkand)
- * 2. अयोध्या काण्ड (ayodhyakand)
- * 3. अरण्य काण्ड (aranyakand)
- * 4. किष्किन्धा काण्ड (kishkindhakand)
- * 5. सुन्दर काण्ड (sunderkand)
- * 6. लंका काण्ड (lankakand)
- * 7. उत्तर कांड (uttarkand)
- * 8. श्री रामायण जी की आरती (aarti)
- * 9. रामायण प्रश्नावली (Quiz)
- * 10. श्री रामचरित मानस – रोचक तथ्य
- * 11. हनुमान चालीसा (hanumanchalisa)
- * 12. बजरंग बाण (bajrangban)
+ * Sorts WordPress posts strictly into canonical order (1 to 14):
  */
 export function sortRamayanChapters(posts: WPPostMeta[]): WPPostMeta[] {
   const getOrderIndex = (post: WPPostMeta) => {
@@ -45,7 +34,7 @@ export function sortRamayanChapters(posts: WPPostMeta[]): WPPostMeta[] {
 }
 
 /**
- * Fetches chapter/post index from the Ramayan WordPress API & applies canonical sorting.
+ * Fetches chapter/post index from WordPress API or falls back to local data.
  */
 export async function fetchChapterIndex(): Promise<WPPostMeta[]> {
   let allPosts: WPPostMeta[] = [];
@@ -87,7 +76,6 @@ export async function fetchChapterIndex(): Promise<WPPostMeta[]> {
             page.id === 126 ||
             page.id === 18
           ) {
-            // Avoid duplicates if already in posts
             if (!allPosts.some((p) => p.id === page.id)) {
               allPosts.push({ ...page, isPage: true } as any);
             }
@@ -95,16 +83,26 @@ export async function fetchChapterIndex(): Promise<WPPostMeta[]> {
         });
       }
     } catch (e) {
-      console.warn('Pages fetch notice:', e);
+      console.warn('Pages API fetch notice:', e);
     }
   } catch (error) {
-    console.warn('Failed to fetch from Ramayan WordPress API', error);
+    console.warn('Failed to fetch from Ramayan WordPress API (CORS/network fallback)', error);
   }
 
-  // Sort strictly in 1-12 canonical sequence
-  const sorted = sortRamayanChapters(allPosts);
+  // If online fetch returned empty array or failed due to CORS, use local dataset
+  if (allPosts.length === 0) {
+    return getRamayanKandMetas();
+  }
 
-  // Mark items 8 through 12 as 'New' badge
+  // Ensure any missing local items (like usage, goswami) exist in index
+  const localMetas = getRamayanKandMetas();
+  localMetas.forEach((localItem) => {
+    if (!allPosts.some((p) => p.id === localItem.id || p.slug === localItem.slug)) {
+      allPosts.push(localItem);
+    }
+  });
+
+  const sorted = sortRamayanChapters(allPosts);
   return sorted.map((p, idx) => ({
     ...p,
     isNew: idx >= 7
@@ -112,10 +110,10 @@ export async function fetchChapterIndex(): Promise<WPPostMeta[]> {
 }
 
 /**
- * Fetches full chapter detail payload from the Ramayan WordPress API.
+ * Fetches full chapter detail payload from WordPress API or falls back to local data.
  */
 export async function fetchChapterDetail(id: number): Promise<WPPostDetail> {
-  // First try fetching from Posts API
+  // 1. Try Posts API
   try {
     const response = await fetch(
       `${BASE_URL}/${id}?_fields=id,title,content,slug,date`,
@@ -124,13 +122,15 @@ export async function fetchChapterDetail(id: number): Promise<WPPostDetail> {
 
     if (response.ok) {
       const detail: WPPostDetail = await response.json();
-      return detail;
+      if (detail && detail.content && detail.content.rendered) {
+        return detail;
+      }
     }
   } catch (e) {
-    console.warn(`Post fetch failed for ${id}, trying Pages API`, e);
+    console.warn(`Post fetch failed for ID ${id}`, e);
   }
 
-  // Fallback to Pages API (e.g. for page 44 Quiz)
+  // 2. Try Pages API
   try {
     const pageResponse = await fetch(
       `${PAGES_URL}/${id}?_fields=id,title,content,slug,date`,
@@ -139,11 +139,19 @@ export async function fetchChapterDetail(id: number): Promise<WPPostDetail> {
 
     if (pageResponse.ok) {
       const pageDetail: WPPostDetail = await pageResponse.json();
-      return pageDetail;
+      if (pageDetail && pageDetail.content && pageDetail.content.rendered) {
+        return pageDetail;
+      }
     }
   } catch (e) {
-    console.error(`Page fetch failed for ${id}`, e);
+    console.warn(`Page fetch failed for ID ${id}`, e);
   }
 
-  throw new Error(`WordPress API returned error for content ID ${id}`);
+  // 3. Fallback to bundled local dataset
+  const localDetail = getRamayanKandAsWPDetail(id);
+  if (localDetail) {
+    return localDetail;
+  }
+
+  throw new Error(`Unable to load content for ID ${id}`);
 }
