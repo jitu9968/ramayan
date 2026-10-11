@@ -1,7 +1,7 @@
 import { get, set, del, keys, clear } from 'idb-keyval';
 import { WPPostDetail, Bookmark, LastRead, ReaderSettings } from '../types/ramayan';
 
-const CHAPTER_PREFIX = 'ramayan_chapter_';
+const CHAPTER_PREFIX = 'ramayan_chapter_v2_';
 const BOOKMARKS_KEY = 'ramayan_bookmarks';
 const LAST_READ_KEY = 'ramayan_last_read';
 const SETTINGS_KEY = 'ramayan_reader_settings';

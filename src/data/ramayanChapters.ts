@@ -1,4 +1,8 @@
 import { WPPostDetail, WPPostMeta } from '../types/ramayan';
+import rawPostsData from './ramayanFullRaw.json';
+import { formatRamayanHtml } from '../utils/verseFormatter';
+
+const rawPosts: Record<string, string> = rawPostsData as Record<string, string>;
 
 export interface RamayanKandData {
   id: number;
@@ -450,6 +454,14 @@ export const RAMAYAN_KANDS: RamayanKandData[] = [
     `
   }
 ];
+
+// Hydrate all Kandas and chapters with complete formatted verses from the full dataset
+RAMAYAN_KANDS.forEach((kand) => {
+  const fullRaw = rawPosts[String(kand.id)];
+  if (fullRaw) {
+    kand.contentHtml = formatRamayanHtml(fullRaw, kand.id);
+  }
+});
 
 export function getRamayanKandAsWPDetail(kandId: number): WPPostDetail | undefined {
   const kand = RAMAYAN_KANDS.find((k) => k.id === kandId);

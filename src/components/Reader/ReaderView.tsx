@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { WPPostDetail, ReaderSettings } from '../../types/ramayan';
 import { isBookmarked, toggleBookmark, saveLastRead } from '../../services/storage';
+import { formatRamayanHtml } from '../../utils/verseFormatter';
 
 interface ReaderViewProps {
   chapter: WPPostDetail;
@@ -57,6 +58,11 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
     txt.innerHTML = chapter.title.rendered;
     return txt.value;
   }, [chapter.title.rendered]);
+
+  // Ensure chapter HTML is always formatted in Balkand verse-block style
+  const formattedHtml = React.useMemo(() => {
+    return formatRamayanHtml(chapter.content.rendered, chapter.id);
+  }, [chapter.content.rendered, chapter.id]);
 
   // Check bookmark state
   useEffect(() => {
@@ -373,7 +379,7 @@ export const ReaderView: React.FC<ReaderViewProps> = ({
           ref={contentRef}
           style={{ fontSize: `${settings.fontSize}px` }}
           className={`ramayan-reader-content theme-text ${getFontFamilyClass()} ${getLineHeightClass()} space-y-6`}
-          dangerouslySetInnerHTML={{ __html: chapter.content.rendered }}
+          dangerouslySetInnerHTML={{ __html: formattedHtml }}
         />
       </main>
 

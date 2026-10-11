@@ -1,5 +1,6 @@
 import { WPPostMeta, WPPostDetail } from '../types/ramayan';
-import { RAMAYAN_KANDS, getRamayanKandAsWPDetail, getRamayanKandMetas } from '../data/ramayanChapters';
+import { getRamayanKandAsWPDetail, getRamayanKandMetas } from '../data/ramayanChapters';
+import { formatRamayanHtml } from '../utils/verseFormatter';
 
 const BASE_URL = 'https://www.jituonline.in/ramayan/wp-json/wp/v2/posts';
 const PAGES_URL = 'https://www.jituonline.in/ramayan/wp-json/wp/v2/pages';
@@ -30,7 +31,9 @@ export function sortRamayanChapters(posts: WPPostMeta[]): WPPostMeta[] {
     return 99;
   };
 
-  return [...posts].sort((a, b) => getOrderIndex(a) - getOrderIndex(b));
+  return [...posts]
+    .filter((p) => getOrderIndex(p) <= 14)
+    .sort((a, b) => getOrderIndex(a) - getOrderIndex(b));
 }
 
 /**
@@ -123,7 +126,13 @@ export async function fetchChapterDetail(id: number): Promise<WPPostDetail> {
     if (response.ok) {
       const detail: WPPostDetail = await response.json();
       if (detail && detail.content && detail.content.rendered) {
-        return detail;
+        return {
+          ...detail,
+          content: {
+            ...detail.content,
+            rendered: formatRamayanHtml(detail.content.rendered, detail.id)
+          }
+        };
       }
     }
   } catch (e) {
@@ -140,14 +149,20 @@ export async function fetchChapterDetail(id: number): Promise<WPPostDetail> {
     if (pageResponse.ok) {
       const pageDetail: WPPostDetail = await pageResponse.json();
       if (pageDetail && pageDetail.content && pageDetail.content.rendered) {
-        return pageDetail;
+        return {
+          ...pageDetail,
+          content: {
+            ...pageDetail.content,
+            rendered: formatRamayanHtml(pageDetail.content.rendered, pageDetail.id)
+          }
+        };
       }
     }
   } catch (e) {
     console.warn(`Page fetch failed for ID ${id}`, e);
   }
 
-  // 3. Fallback to bundled local dataset
+  // 3. Fallback to bundled local dataset (complete formatted text)
   const localDetail = getRamayanKandAsWPDetail(id);
   if (localDetail) {
     return localDetail;
