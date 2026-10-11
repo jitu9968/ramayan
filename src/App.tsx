@@ -7,7 +7,7 @@ import {
   DownloadProgress,
   GlobalSearchResult
 } from './types/ramayan';
-import { fetchChapterIndex, fetchChapterDetail } from './services/api';
+import { fetchChapterIndex, fetchChapterDetail, syncFromGitHubCdn } from './services/api';
 import {
   getChapterFromCache,
   saveChapterToCache,
@@ -112,7 +112,7 @@ export default function App() {
         await saveChapterIndexCache(localMetas);
       }
     } catch (err: any) {
-      console.warn('Network fetch failed for index, relying on local dataset', err);
+      console.warn('Local index load notice, relying on cached dataset', err);
       const cachedIndex = await getChapterIndexCache();
       if (cachedIndex && cachedIndex.length > 0) {
         setChapters(cachedIndex);
@@ -127,34 +127,36 @@ export default function App() {
       setLastReadState(lr);
       setIsLoadingIndex(false);
     }
+
+    // Background delta check against GitHub CDN manifest.json (only downloads if hash changed)
+    syncFromGitHubCdn()
+      .then((res) => {
+        if (res.index && res.index.length > 0) {
+          setChapters(res.index);
+        }
+        refreshCachedIds();
+      })
+      .catch(() => {
+        /* Offline or CDN unreachable - local static bundle is already active */
+      });
   };
 
-  // Open Chapter with Offline-First Data Flow
+  // Open Chapter with Instant Local / IndexedDB Data Flow
   const handleOpenChapter = async (id: number) => {
     setActiveChapterId(id);
     setIsLoadingChapter(true);
     setChapterError(null);
 
     try {
-      // 1. Check IndexedDB first for zero network latency
+      // 1. Check IndexedDB first for zero latency
       const cached = await getChapterFromCache(id);
       if (cached) {
         setActiveChapterDetail(cached);
         setIsLoadingChapter(false);
-
-        // Fetch fresh detail in background silently if online
-        fetchChapterDetail(id)
-          .then((fresh) => {
-            saveChapterToCache(fresh);
-            setActiveChapterDetail(fresh);
-          })
-          .catch(() => {
-            /* Silent offline fallback */
-          });
         return;
       }
 
-      // 2. If not cached in IndexedDB, fetch from API
+      // 2. Load from bundled static /data/chapters/{id}.json (or GitHub CDN fallback)
       const detail = await fetchChapterDetail(id);
       setActiveChapterDetail(detail);
 
@@ -162,7 +164,7 @@ export default function App() {
       saveChapterToCache(detail).then(refreshCachedIds);
     } catch (err: any) {
       console.error('Error opening chapter:', err);
-      setChapterError('Failed to load chapter content. Please verify network connection.');
+      setChapterError('Failed to load chapter content.');
     } finally {
       setIsLoadingChapter(false);
     }

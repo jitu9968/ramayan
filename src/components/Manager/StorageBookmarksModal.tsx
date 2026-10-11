@@ -187,7 +187,7 @@ export const StorageBookmarksModal: React.FC<StorageBookmarksModalProps> = ({
                   className="w-full py-3 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow hover:shadow-md active:scale-95 transition-all disabled:opacity-50"
                 >
                   <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                  <span>{isSyncing ? 'Syncing WordPress Updates...' : 'Sync Latest WordPress Updates'}</span>
+                  <span>{isSyncing ? 'Checking GitHub CDN Updates...' : 'Sync GitHub CDN Updates'}</span>
                 </button>
 
                 <button

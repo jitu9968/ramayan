@@ -1,12 +1,19 @@
-import { WPPostMeta, WPPostDetail } from '../types/ramayan';
+import { WPPostMeta, WPPostDetail, DataManifest } from '../types/ramayan';
 import { getRamayanKandAsWPDetail, getRamayanKandMetas } from '../data/ramayanChapters';
+import {
+  getStoredManifest,
+  saveStoredManifest,
+  saveChapterToCache,
+  saveChapterIndexCache,
+  getChapterFromCache
+} from './storage';
 import { formatRamayanHtml } from '../utils/verseFormatter';
 
-const BASE_URL = 'https://www.jituonline.in/ramayan/wp-json/wp/v2/posts';
-const PAGES_URL = 'https://www.jituonline.in/ramayan/wp-json/wp/v2/pages';
+const LOCAL_DATA_BASE = './data';
+const GITHUB_CDN_BASE = 'https://cdn.jsdelivr.net/gh/jitu9968/ramayan@main/public/data';
 
 /**
- * Sorts WordPress posts strictly into canonical order (1 to 14):
+ * Sorts posts strictly into canonical order (1 to 14):
  */
 export function sortRamayanChapters(posts: WPPostMeta[]): WPPostMeta[] {
   const getOrderIndex = (post: WPPostMeta) => {
@@ -37,95 +44,42 @@ export function sortRamayanChapters(posts: WPPostMeta[]): WPPostMeta[] {
 }
 
 /**
- * Fetches chapter/post index from WordPress API or falls back to local data.
+ * Loads the chapter index from bundled static /data/index.json (0ms local load)
+ * with fallback to in-memory metadata.
  */
 export async function fetchChapterIndex(): Promise<WPPostMeta[]> {
-  let allPosts: WPPostMeta[] = [];
-
   try {
-    // 1. Fetch posts from WordPress API
-    const response = await fetch(
-      `${BASE_URL}?per_page=100&_fields=id,title,slug,date`,
-      { headers: { Accept: 'application/json' } }
-    );
-
-    if (response.ok) {
-      const posts: WPPostMeta[] = await response.json();
+    const localRes = await fetch(`${LOCAL_DATA_BASE}/index.json`, {
+      headers: { Accept: 'application/json' }
+    });
+    if (localRes.ok) {
+      const posts: WPPostMeta[] = await localRes.json();
       if (Array.isArray(posts) && posts.length > 0) {
-        allPosts = posts;
+        return sortRamayanChapters(posts);
       }
     }
-
-    // 2. Fetch pages (for Quiz, Usage, Goswami, etc.)
-    try {
-      const pageRes = await fetch(
-        `${PAGES_URL}?per_page=100&_fields=id,title,slug,date`,
-        { headers: { Accept: 'application/json' } }
-      );
-      if (pageRes.ok) {
-        const pages: WPPostMeta[] = await pageRes.json();
-        pages.forEach((page) => {
-          const slug = (page.slug || '').toLowerCase();
-          const title = (page.title?.rendered || '').toLowerCase();
-          if (
-            slug.includes('prashnavali') ||
-            slug.includes('usage') ||
-            slug.includes('goswami') ||
-            slug.includes('interesting') ||
-            title.includes('प्रश्नावली') ||
-            title.includes('प्रयोग') ||
-            title.includes('गोस्वामी') ||
-            page.id === 44 ||
-            page.id === 126 ||
-            page.id === 18
-          ) {
-            if (!allPosts.some((p) => p.id === page.id)) {
-              allPosts.push({ ...page, isPage: true } as any);
-            }
-          }
-        });
-      }
-    } catch (e) {
-      console.warn('Pages API fetch notice:', e);
-    }
-  } catch (error) {
-    console.warn('Failed to fetch from Ramayan WordPress API (CORS/network fallback)', error);
+  } catch (e) {
+    console.warn('Local static index fetch notice, falling back to inline metadata', e);
   }
 
-  // If online fetch returned empty array or failed due to CORS, use local dataset
-  if (allPosts.length === 0) {
-    return getRamayanKandMetas();
-  }
-
-  // Ensure any missing local items (like usage, goswami) exist in index
-  const localMetas = getRamayanKandMetas();
-  localMetas.forEach((localItem) => {
-    if (!allPosts.some((p) => p.id === localItem.id || p.slug === localItem.slug)) {
-      allPosts.push(localItem);
-    }
-  });
-
-  const sorted = sortRamayanChapters(allPosts);
-  return sorted.map((p, idx) => ({
-    ...p,
-    isNew: idx >= 7
-  }));
+  return getRamayanKandMetas();
 }
 
 /**
- * Fetches full chapter detail payload from WordPress API or falls back to local data.
+ * Loads a chapter's full pre-formatted content from:
+ * 1. Bundled static /data/chapters/{id}.json (instant local asset, works offline)
+ * 2. GitHub jsDelivr CDN (for Over-The-Air added/updated chapters)
+ * 3. Inline fallback summary
  */
 export async function fetchChapterDetail(id: number): Promise<WPPostDetail> {
-  // 1. Try Posts API
+  // 1. Load from bundled static asset (/data/chapters/{id}.json)
   try {
-    const response = await fetch(
-      `${BASE_URL}/${id}?_fields=id,title,content,slug,date`,
-      { headers: { Accept: 'application/json' } }
-    );
-
-    if (response.ok) {
-      const detail: WPPostDetail = await response.json();
-      if (detail && detail.content && detail.content.rendered) {
+    const localRes = await fetch(`${LOCAL_DATA_BASE}/chapters/${id}.json`, {
+      headers: { Accept: 'application/json' }
+    });
+    if (localRes.ok) {
+      const detail: WPPostDetail = await localRes.json();
+      if (detail?.content?.rendered) {
         return {
           ...detail,
           content: {
@@ -136,37 +90,140 @@ export async function fetchChapterDetail(id: number): Promise<WPPostDetail> {
       }
     }
   } catch (e) {
-    console.warn(`Post fetch failed for ID ${id}`, e);
+    console.warn(`Local static chapter ${id} fetch notice:`, e);
   }
 
-  // 2. Try Pages API
+  // 2. Fallback to GitHub jsDelivr CDN (free forever open-source CDN)
   try {
-    const pageResponse = await fetch(
-      `${PAGES_URL}/${id}?_fields=id,title,content,slug,date`,
-      { headers: { Accept: 'application/json' } }
-    );
-
-    if (pageResponse.ok) {
-      const pageDetail: WPPostDetail = await pageResponse.json();
-      if (pageDetail && pageDetail.content && pageDetail.content.rendered) {
+    const cdnRes = await fetch(`${GITHUB_CDN_BASE}/chapters/${id}.json`, {
+      headers: { Accept: 'application/json' }
+    });
+    if (cdnRes.ok) {
+      const detail: WPPostDetail = await cdnRes.json();
+      if (detail?.content?.rendered) {
         return {
-          ...pageDetail,
+          ...detail,
           content: {
-            ...pageDetail.content,
-            rendered: formatRamayanHtml(pageDetail.content.rendered, pageDetail.id)
+            ...detail.content,
+            rendered: formatRamayanHtml(detail.content.rendered, detail.id)
           }
         };
       }
     }
   } catch (e) {
-    console.warn(`Page fetch failed for ID ${id}`, e);
+    console.warn(`GitHub CDN fetch notice for chapter ${id}:`, e);
   }
 
-  // 3. Fallback to bundled local dataset (complete formatted text)
+  // 3. Final fallback to inline metadata
   const localDetail = getRamayanKandAsWPDetail(id);
   if (localDetail) {
     return localDetail;
   }
 
-  throw new Error(`Unable to load content for ID ${id}`);
+  throw new Error(`Unable to load content for chapter ID ${id}`);
+}
+
+/**
+ * Lightweight Over-The-Air (OTA) delta sync against GitHub / jsDelivr CDN.
+ * Checks manifest.json (~1.7 KB). If remote hashes match local hashes, 0 chapter requests are made.
+ * Only modified or new chapters are downloaded from the CDN.
+ */
+export async function syncFromGitHubCdn(): Promise<{
+  updatedChapters: number;
+  version: string;
+  index?: WPPostMeta[];
+}> {
+  // Load current baseline manifest (from IndexedDB or bundled /data/manifest.json)
+  let localManifest = await getStoredManifest();
+  if (!localManifest) {
+    try {
+      const bundledRes = await fetch(`${LOCAL_DATA_BASE}/manifest.json`);
+      if (bundledRes.ok) {
+        localManifest = await bundledRes.json();
+        if (localManifest) {
+          await saveStoredManifest(localManifest);
+        }
+      }
+    } catch {
+      // Ignore if offline
+    }
+  }
+
+  // Fetch remote manifest from GitHub CDN
+  const remoteRes = await fetch(`${GITHUB_CDN_BASE}/manifest.json`, {
+    headers: { Accept: 'application/json' },
+    cache: 'no-cache'
+  });
+
+  if (!remoteRes.ok) {
+    throw new Error(`CDN manifest returned status ${remoteRes.status}`);
+  }
+
+  const remoteManifest: DataManifest = await remoteRes.json();
+  let updatedChapters = 0;
+
+  // Check each chapter hash; download from CDN only if hash changed or missing
+  for (const [idStr, remoteEntry] of Object.entries(remoteManifest.chapters || {})) {
+    const localEntry = localManifest?.chapters?.[idStr];
+    const isHashChanged = !localEntry || localEntry.hash !== remoteEntry.hash;
+
+    if (isHashChanged) {
+      try {
+        const chRes = await fetch(`${GITHUB_CDN_BASE}/chapters/${remoteEntry.id}.json`, {
+          headers: { Accept: 'application/json' },
+          cache: 'no-cache'
+        });
+        if (chRes.ok) {
+          const detail: WPPostDetail = await chRes.json();
+          await saveChapterToCache({
+            ...detail,
+            content: {
+              ...detail.content,
+              rendered: formatRamayanHtml(detail.content.rendered, detail.id)
+            }
+          });
+          updatedChapters++;
+        }
+      } catch (e) {
+        console.warn(`Failed to sync updated chapter ${idStr} from CDN`, e);
+      }
+    } else {
+      // Ensure local static chapter is seeded in IndexedDB if not already cached
+      const cached = await getChapterFromCache(remoteEntry.id);
+      if (!cached) {
+        try {
+          const detail = await fetchChapterDetail(remoteEntry.id);
+          await saveChapterToCache(detail);
+        } catch {
+          // Ignore
+        }
+      }
+    }
+  }
+
+  // If manifest version changed, also refresh index.json from CDN
+  let updatedIndex: WPPostMeta[] | undefined;
+  if (!localManifest || localManifest.version !== remoteManifest.version || updatedChapters > 0) {
+    try {
+      const idxRes = await fetch(`${GITHUB_CDN_BASE}/index.json`, {
+        headers: { Accept: 'application/json' },
+        cache: 'no-cache'
+      });
+      if (idxRes.ok) {
+        const rawIndex: WPPostMeta[] = await idxRes.json();
+        updatedIndex = sortRamayanChapters(rawIndex);
+        await saveChapterIndexCache(updatedIndex);
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  await saveStoredManifest(remoteManifest);
+
+  return {
+    updatedChapters,
+    version: remoteManifest.version,
+    index: updatedIndex
+  };
 }

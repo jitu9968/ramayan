@@ -56,3 +56,19 @@ export interface GlobalSearchResult {
   snippet: string;
   matchCount: number;
 }
+
+export interface ChapterManifestEntry {
+  id: number;
+  slug: string;
+  hash: string;
+  bytes: number;
+}
+
+export interface DataManifest {
+  version: string;
+  updatedAt: string;
+  cdnBaseUrl: string;
+  totalChapters: number;
+  chapters: Record<string, ChapterManifestEntry>;
+}
+

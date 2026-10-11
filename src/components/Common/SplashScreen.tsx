@@ -120,7 +120,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
         {/* Sacred Image Container */}
         <div className="relative w-full aspect-square max-w-[240px] rounded-2xl overflow-hidden border-2 border-amber-500/40 shadow-xl group">
           <img
-            src="/ramdarbar.jpg"
+            src="./ramdarbar.jpg"
             alt="Shri Ram Darbar - Lord Ram, Sita, Laxman & Hanuman Ji"
             className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
             onError={(e) => {

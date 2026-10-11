@@ -1,0 +1,128 @@
+[
+  {
+    "id": 8,
+    "title": {
+      "rendered": "१. बालकाण्ड (Balkand)"
+    },
+    "slug": "balkand",
+    "date": "2006-07-24T07:06:16",
+    "isNew": false
+  },
+  {
+    "id": 11,
+    "title": {
+      "rendered": "२. अयोध्या काण्ड (Ayodhyakand)"
+    },
+    "slug": "ayodhyakand",
+    "date": "2006-07-24T07:15:37",
+    "isNew": false
+  },
+  {
+    "id": 10,
+    "title": {
+      "rendered": "३. अरण्य काण्ड (Aranyakand)"
+    },
+    "slug": "aranyakand",
+    "date": "2006-07-24T07:14:36",
+    "isNew": false
+  },
+  {
+    "id": 7,
+    "title": {
+      "rendered": "४. किष्किन्धा काण्ड (Kishkindhakand)"
+    },
+    "slug": "kishkindhakand",
+    "date": "2006-07-24T07:06:16",
+    "isNew": false
+  },
+  {
+    "id": 12,
+    "title": {
+      "rendered": "५. सुन्दर काण्ड (Sunderkand)"
+    },
+    "slug": "sunderkand",
+    "date": "2006-07-24T07:16:23",
+    "isNew": false
+  },
+  {
+    "id": 9,
+    "title": {
+      "rendered": "६. लंका काण्ड (Lankakand)"
+    },
+    "slug": "lankakand",
+    "date": "2006-07-24T07:13:51",
+    "isNew": false
+  },
+  {
+    "id": 15,
+    "title": {
+      "rendered": "७. उत्तर कांड (Uttarkand)"
+    },
+    "slug": "uttarkand",
+    "date": "2006-07-24T07:41:23",
+    "isNew": false
+  },
+  {
+    "id": 39,
+    "title": {
+      "rendered": "८. श्री रामायण जी की आरती"
+    },
+    "slug": "aarti",
+    "date": "2017-04-26T14:07:15",
+    "isNew": true
+  },
+  {
+    "id": 1009,
+    "title": {
+      "rendered": "९. रामायण प्रश्नावली (Quiz)"
+    },
+    "slug": "quiz",
+    "date": "2026-02-01T00:00:00",
+    "isNew": true
+  },
+  {
+    "id": 1010,
+    "title": {
+      "rendered": "१०. श्री रामचरित मानस – रोचक तथ्य"
+    },
+    "slug": "interestingfacts",
+    "date": "2026-02-02T00:00:00",
+    "isNew": true
+  },
+  {
+    "id": 126,
+    "title": {
+      "rendered": "११. रामायण के प्रयोग"
+    },
+    "slug": "usage",
+    "date": "2017-08-10T14:49:31",
+    "isNew": true
+  },
+  {
+    "id": 18,
+    "title": {
+      "rendered": "१२. गोस्वामी तुलसीदास"
+    },
+    "slug": "goswami",
+    "date": "2006-08-06T11:32:12",
+    "isNew": true
+  },
+  {
+    "id": 73,
+    "title": {
+      "rendered": "१३. हनुमान चालीसा"
+    },
+    "slug": "hanumanchalisa",
+    "date": "2017-05-09T05:22:52",
+    "isNew": true
+  },
+  {
+    "id": 109,
+    "title": {
+      "rendered": "१४. बजरंग बाण"
+    },
+    "slug": "bajrangban",
+    "date": "2017-05-28T09:11:11",
+    "isNew": true
+  }
+]

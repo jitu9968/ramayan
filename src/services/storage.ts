@@ -1,11 +1,12 @@
-import { get, set, del, keys, clear } from 'idb-keyval';
-import { WPPostDetail, Bookmark, LastRead, ReaderSettings } from '../types/ramayan';
+import { get, set, del, keys } from 'idb-keyval';
+import { WPPostDetail, Bookmark, LastRead, ReaderSettings, DataManifest } from '../types/ramayan';
 
 const CHAPTER_PREFIX = 'ramayan_chapter_v2_';
 const BOOKMARKS_KEY = 'ramayan_bookmarks';
 const LAST_READ_KEY = 'ramayan_last_read';
 const SETTINGS_KEY = 'ramayan_reader_settings';
 const INDEX_CACHE_KEY = 'ramayan_chapter_index';
+const MANIFEST_CACHE_KEY = 'ramayan_data_manifest';
 
 // --- CHAPTER CACHING IN INDEXEDDB ---
 
@@ -32,6 +33,7 @@ export async function clearChapterCache(): Promise<void> {
   for (const key of chapterKeys) {
     await del(key);
   }
+  await del(MANIFEST_CACHE_KEY);
 }
 
 export async function saveChapterIndexCache(indexData: any[]): Promise<void> {
@@ -41,6 +43,15 @@ export async function saveChapterIndexCache(indexData: any[]): Promise<void> {
 export async function getChapterIndexCache(): Promise<any[] | undefined> {
   return await get<any[]>(INDEX_CACHE_KEY);
 }
+
+export async function saveStoredManifest(manifest: DataManifest): Promise<void> {
+  await set(MANIFEST_CACHE_KEY, manifest);
+}
+
+export async function getStoredManifest(): Promise<DataManifest | undefined> {
+  return await get<DataManifest>(MANIFEST_CACHE_KEY);
+}
+
 
 // --- BOOKMARKS ---
 
@@ -155,9 +166,20 @@ export async function searchOfflineChapters(query: string): Promise<GlobalSearch
     }
   }
 
-  // 2. Add local Ramayan dataset if not already in IndexedDB
+  // 2. Load any uncached chapters from bundled static /data/chapters/{id}.json
   for (const kand of RAMAYAN_KANDS) {
     if (!allChaptersToSearch.some((c) => c.id === kand.id)) {
+      try {
+        const res = await fetch(`./data/chapters/${kand.id}.json`);
+        if (res.ok) {
+          const detail: WPPostDetail = await res.json();
+          allChaptersToSearch.push(detail);
+          await saveChapterToCache(detail);
+          continue;
+        }
+      } catch {
+        // Fallback to inline summary if static asset fetch fails
+      }
       allChaptersToSearch.push({
         id: kand.id,
         title: { rendered: kand.titleDevanagari },
